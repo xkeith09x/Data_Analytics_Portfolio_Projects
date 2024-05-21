@@ -1,0 +1,148 @@
+--WALMART SALES 
+--DATA CLEANING AND EXPLORATION
+
+--View the tables to show on what data are we working with.
+--Run each code separately to avoid error.
+
+SELECT *
+FROM Walmart_Sales.dbo.features
+
+SELECT *
+FROM Walmart_Sales.dbo.stores
+
+SELECT *
+FROM Walmart_Sales.dbo.test
+
+SELECT *
+FROM Walmart_Sales.dbo.train
+
+--DATA CLEANING 
+--As some values shows as NA instead of NULL, we need to update these values so we can easily filter out values which are NULL.
+--Use the UPDATE Table function below to update values.
+
+UPDATE features
+SET MarkDown1 = NULLIF(MarkDown1, 'NA'),
+    MarkDown2 = NULLIF(MarkDown2, 'NA'),
+	MarkDown3 = NULLIF(MarkDown3, 'NA'),
+	MarkDown4 = NULLIF(MarkDown4, 'NA'),
+	MarkDown5 = NULLIF(MarkDown5, 'NA')
+WHERE MarkDown1 = 'NA' OR 
+	  MarkDown2 = 'NA' OR
+	  MarkDown3 = 'NA' OR
+	  MarkDown4 = 'NA' OR
+	  MarkDown5 = 'NA';
+
+SELECT *
+FROM features
+
+--Column IsHoliday is shown in a Binary Language of 0 and 1.
+--Update this to Yes and No. Also update the data type from bit to nvarchar(50)
+
+ALTER TABLE features
+ALTER COLUMN IsHoliday NVARCHAR(50);
+
+UPDATE features
+SET IsHoliday = CASE
+	WHEN IsHoliday = 0 THEN 'No'
+	WHEN IsHoliday = 1 THEN 'Yes'
+	ELSE IsHoliday
+END;
+
+SELECT *
+FROM features
+
+--Update the 'test' and 'train' table as well.
+
+ALTER TABLE Walmart_Sales.dbo.test
+ALTER COLUMN IsHoliday NVARCHAR(50);
+
+UPDATE Walmart_Sales.dbo.test
+SET IsHoliday = CASE
+	WHEN IsHoliday = 0 THEN 'No'
+	WHEN IsHoliday = 1 THEN 'Yes'
+	ELSE IsHoliday
+END;
+
+SELECT *
+FROM Walmart_Sales.dbo.test
+
+--Updating train table
+
+ALTER TABLE Walmart_Sales.dbo.train
+ALTER COLUMN IsHoliday NVARCHAR(50);
+
+UPDATE Walmart_Sales.dbo.train
+SET IsHoliday = CASE
+	WHEN IsHoliday = 0 THEN 'No'
+	WHEN IsHoliday = 1 THEN 'Yes'
+	ELSE IsHoliday
+END;
+
+SELECT *
+FROM Walmart_Sales.dbo.train
+
+--Checking the connections between the columns and data accross the tables. Other table shows different data of information. Our main focus is to check on Sales. 
+--No existing primary key can be used to join the tables. 
+
+--'train' table shows the weekly sales. We can utilize this table to show the aggregated weekly sales
+
+--Separated by Store
+
+SELECT Store, 
+	   SUM(Weekly_Sales) as sum_ws
+FROM Walmart_Sales.dbo.train
+GROUP BY Store
+ORDER BY Store
+
+--Show the aggregated Sales by Store to show which store is best performing
+
+SELECT DENSE_RANK() OVER (ORDER BY SUM(Weekly_Sales)) as Ranked,
+	   Store, 
+	   SUM(Weekly_Sales) as Sum_WS
+FROM Walmart_Sales.dbo.train
+GROUP BY Store
+
+--Ranked Sales aggregated by Month and Year.
+
+SELECT DENSE_RANK() OVER (ORDER BY SUM(Weekly_Sales)) as Ranked,
+	   YEAR(Date) as Year,
+	   MONTH(Date) as Month,
+	   SUM(Weekly_Sales) as Sum_WS
+FROM Walmart_Sales.dbo.train
+GROUP BY YEAR(Date), MONTH(Date)
+ORDER BY Ranked
+
+--Count of Holidays for each month of the year
+
+SELECT 
+	   YEAR(Date) as Year,
+	   MONTH(Date) as Month,
+	   COUNT(DISTINCT(CASE WHEN IsHoliday = 'Yes' THEN 1 ELSE 0 END)) as Holidays
+FROM Walmart_Sales.dbo.train
+GROUP BY YEAR(Date), MONTH(Date)
+ORDER BY Year, Month
+
+--Sum of Sales during the Holidays
+
+SELECT DENSE_RANK() OVER (ORDER BY SUM(Weekly_Sales)) as Ranked,
+	   YEAR(Date) as Year,
+	   MONTH(Date) as Month,
+	   SUM(Weekly_Sales) as Sum_WS
+FROM Walmart_Sales.dbo.train
+WHERE IsHoliday = 'Yes'
+GROUP BY YEAR(Date), MONTH(Date)
+ORDER BY Ranked
+
+--Sum of Sales on regular days
+
+SELECT DENSE_RANK() OVER (ORDER BY SUM(Weekly_Sales)) as Ranked,
+	   YEAR(Date) as Year,
+	   MONTH(Date) as Month,
+	   SUM(Weekly_Sales) as Sum_WS
+FROM Walmart_Sales.dbo.train
+WHERE IsHoliday = 'No'
+GROUP BY YEAR(Date), MONTH(Date)
+ORDER BY Ranked
+
+--These tables are now utilizable to create a Visualization Report for the Walmart Sales.  
+
