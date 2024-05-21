@@ -1,0 +1,215 @@
+--HOMICIDE REPORTS (1980-2014)
+--Objective: Detect Possible Patterns in Homicide
+--Homicide - /ˈhäməˌsīd/ noun NORTH AMERICAN - "the killing of one person by another."
+
+
+--Viewing the entire dataset for exploration
+
+SELECT *
+FROM Homicide_Report.dbo.homrep
+
+--Column Incident refers to cases handled by Agency.
+--Utilizing the Crime Type column as the number of cases only relating to Homicide
+
+
+--------DATA CLEANING----------------
+
+--Drop rows with Victim Age beyond natural age line (e.g. 998)
+
+DELETE FROM Homicide_Report.dbo.homrep
+WHERE Victim_Age > 99
+
+--------OVERALL TRENDS----------------
+
+--Number of Homicide/Crime per year
+
+SELECT 
+	[Year],
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY [Year]
+ORDER BY Num_Crimes DESC
+
+--Number of Homicide/Crime per month
+
+SELECT 
+	[Month],
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY [Month]
+ORDER BY Num_Crimes DESC
+
+--Type of Crimes associated with Homicide
+
+SELECT 
+	Crime_Type,
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY Crime_Type
+ORDER BY Num_Crimes DESC
+
+--------DEMOGRAPHIC ANALYSIS----------------
+
+--Number of Homicide/Crime per age
+
+SELECT 
+	Victim_Age,
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY Victim_Age
+ORDER BY Num_Crimes DESC
+
+--Age distribution over the years
+
+SELECT 
+	[Year],Victim_Age,
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY [Year], Victim_Age
+ORDER BY [Year], Victim_Age
+
+--Victim's Race and Ethnicities
+
+SELECT 
+	Victim_Race, Victim_Ethnicity,
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY Victim_Race, Victim_Ethnicity
+ORDER BY Victim_Race, Victim_Ethnicity
+
+--Correlation of Victim's Race and Solvable Rate
+--Temp Table
+
+WITH CTE AS(
+SELECT 
+	Victim_Race,
+	COUNT(Crime_Type) AS Num_Crimes,
+	SUM(CASE WHEN Crime_Solved = 1 THEN 1 END) AS Solved
+FROM Homicide_Report.dbo.homrep
+GROUP BY Victim_Race)
+
+SELECT 
+	Victim_Race,
+	CONCAT((Solved *100/Num_Crimes),'%') AS Solved_Rate
+FROM CTE
+ORDER BY Victim_Race
+
+
+--------GEOGRAPHICAL ANALYSIS----------------
+
+--Number of Homicide/Crime per State
+
+SELECT 
+	[State],
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY [State]
+ORDER BY Num_Crimes DESC
+
+--Number of Homicide/Crime per City and State
+
+SELECT 
+	[City], [State],
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY [City], [State]
+ORDER BY Num_Crimes DESC
+
+--Number of Homicide/Crime per Agency
+
+SELECT 
+	Agency_Name,
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY Agency_Name
+ORDER BY Num_Crimes DESC
+
+--Correlation of City and State with the weapon used.
+
+SELECT 
+	[City], [State], Weapon,
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY [City], [State], Weapon
+ORDER BY Num_Crimes DESC
+
+
+--Correlation of Agency's name and Solvable Rate
+--Temp Table
+
+WITH CTE AS(
+SELECT 
+	Agency_Name,
+	COUNT(Crime_Type) AS Num_Crimes,
+	SUM(CASE WHEN Crime_Solved = 1 THEN 1 END) AS Solved
+FROM Homicide_Report.dbo.homrep
+GROUP BY Agency_Name)
+
+SELECT 
+	Agency_Name,
+	CONCAT((Solved *100/Num_Crimes),'%') AS Solved_Rate
+FROM CTE
+ORDER BY Solved_Rate DESC
+
+
+--------RELATIONSHIP ANALYSIS----------------
+
+--Number of Homicide/Crime per Relationship
+
+SELECT 
+	Relationship,
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY Relationship
+ORDER BY Num_Crimes DESC
+
+--Correlation between relationship and weapon used
+
+SELECT 
+	Relationship, Weapon,
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY Relationship, Weapon
+ORDER BY Weapon, Num_Crimes DESC, Relationship
+
+--Correlation between relationship over the years
+
+SELECT 
+	[Year], 
+	COUNT(Crime_Type) AS Num_Crimes,
+	Relationship
+FROM Homicide_Report.dbo.homrep
+GROUP BY [Year], Relationship
+ORDER BY [Year], Num_Crimes DESC, Relationship
+
+
+--------WEAPON ANALYSIS----------------
+
+--Commonly used weapon
+
+SELECT 
+	Weapon,
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY Weapon
+ORDER BY Num_Crimes DESC
+
+--Correlation between weapon used and victim's age, sex, race.
+
+SELECT 
+	Weapon, Victim_Age, Victim_Sex, Victim_Race,
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY Weapon, Victim_Age, Victim_Sex, Victim_Race
+ORDER BY Num_Crimes DESC
+
+--Choice of weapon over the years
+
+SELECT 
+	[Year], Weapon,
+	COUNT(Crime_Type) AS Num_Crimes
+FROM Homicide_Report.dbo.homrep
+GROUP BY [Year], Weapon
+ORDER BY [Year]
+
+
