@@ -1,0 +1,303 @@
+--Popular Spotify Playlist (Data Exploration) 
+
+--Viewing the table to see what we are working with.
+--Columns, Keys, Constraints are all provided.
+
+SELECT *
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+
+--All songs appears unique
+--Checking for duplicates
+
+SELECT 
+	track_name, artist_s_name,
+	COUNT(*) as num_dup_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+GROUP BY track_name, artist_s_name
+HAVING COUNT (*) > 1
+
+--Confirming if the result is correct, to address if any duplicates and deleting that duplicate
+--The correct data reference would be the "release year, month". 
+--If release date is the same for both duplicates, we can either keep both or delete both.
+
+--Sample Song Duplicate to be deleted. 
+SELECT *
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE track_name = 'About Damn Time'
+
+DELETE FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE track_name = 'About Damn Time' AND released_month = 7
+
+--Since there are only few song duplicates we can manually delete them
+--Double checking the release date for which to keep. 
+
+SELECT *
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE track_name = 'SNAP'
+	OR track_name = 'Take My Breath'
+	OR track_name = 'SPIT IN MY FACE!'
+
+--This songs has the same release dates but different data for other columns.
+--Best to delete to avoid data confusion. Inconsistencies will deviate from better results. 
+
+DELETE FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE track_name = 'SNAP'
+	OR track_name = 'Take My Breath'
+	OR track_name = 'SPIT IN MY FACE!'
+
+-- Table appears to be presentable enough to initiate queries. 
+-- Since no specific query is requested, let's explore the possibilities
+
+--**DISCOVERING DATA FOR TRACK ARTIST**--
+
+-- Count of Artists, Grouped 
+
+SELECT 
+	COUNT(CASE WHEN artist_count = 1 THEN 1 END) AS solo_artists,
+	COUNT(CASE WHEN artist_count = 2 THEN 1 END) AS duo_artists,
+	COUNT(CASE WHEN artist_count = 3 THEN 1 END) AS tri_artists,
+	COUNT(CASE WHEN artist_count >= 4 THEN 1 END) AS group_artists
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+
+-- Listing the top 10 Artist per Group with most songs 	
+
+-- Solo artists
+
+SELECT TOP(10) 
+	artist_s_name,
+	COUNT(track_name) AS num_of_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE artist_count = 1
+GROUP BY artist_s_name
+ORDER BY num_of_songs DESC
+
+--Duo artists
+
+SELECT TOP(10) 
+	artist_s_name,
+	COUNT(track_name) AS num_of_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE artist_count = 2
+GROUP BY artist_s_name
+ORDER BY num_of_songs DESC
+
+--Trio Artists
+
+SELECT TOP(10) 
+	artist_s_name,
+	COUNT(track_name) AS num_of_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE artist_count = 3
+GROUP BY artist_s_name
+ORDER BY num_of_songs DESC
+
+--Group Artists (Since only 1 song for each group was made, we can view them all)
+
+SELECT  
+	artist_s_name,
+	COUNT(track_name) AS num_of_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE artist_count >= 4
+GROUP BY artist_s_name
+ORDER BY num_of_songs DESC
+
+--Ordering the songs in Spotify by Streams in descending
+
+SELECT 
+	track_name, artist_s_name, 
+	artist_count, in_spotify_playlists,
+	in_spotify_playlists, streams
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+ORDER BY streams DESC
+
+--Ordering the songs in "Apple Charts" by their rank ascending order
+--Excludes the 0 rank from charts as it has not been ranked. 
+
+SELECT 
+	track_name, artist_s_name, 
+	artist_count, in_apple_playlists, in_apple_charts
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE in_apple_charts <> 0
+ORDER BY in_apple_charts
+
+--Ordering the songs in "Deezer Charts" by their rank ascending order
+--Excludes the 0 rank from charts as it has not been ranked. 
+
+SELECT 
+	track_name, artist_s_name, 
+	artist_count, in_deezer_playlists, in_deezer_charts
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE in_deezer_charts <> 0
+ORDER BY in_deezer_charts
+
+--Ordering the songs in "Shazam Charts" by their rank ascending order
+--Excludes the 0 rank from charts as it has not been ranked. 
+
+SELECT 
+	track_name, artist_s_name, 
+	artist_count, in_shazam_charts
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE in_shazam_charts <> 0
+ORDER BY in_shazam_charts
+
+--**DISCOVERING DATA FOR TRACK NAME/SONGS**--
+
+--Counting the songs per released year and month
+
+SELECT 
+	released_year, released_month,
+	COUNT(track_name) AS num_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+GROUP BY released_year, released_month
+ORDER BY released_year DESC, released_month DESC
+
+--Counting the released songs per BPM (beats per minute)
+
+SELECT 
+	bpm,
+	COUNT(track_name) AS num_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+GROUP BY bpm
+ORDER BY num_songs DESC
+
+---Counting the released songs per key 
+
+SELECT 
+	[key],
+	COUNT(track_name) AS num_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE [key] IS NOT NULL
+GROUP BY [key]
+ORDER BY num_songs DESC
+
+--Find the Average, Minimum, Maximum for BPM
+
+SELECT 
+	AVG(bpm) AS avg_bpm,
+	MAX(bpm) AS max_bpm,
+	MIN(bpm) AS min_bpm
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+
+-- Top 10 songs by stream, with bpm and key used
+-- To find correlation between bpm and key used with streams
+
+SELECT TOP 10
+	track_name, artist_s_name, 
+	artist_count, in_spotify_playlists,
+	in_spotify_playlists, streams, bpm, [key]
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+ORDER BY streams DESC
+
+--Counting the released songs per danceability, valence, energy, acousticness, 
+--instrumentalness, liveness, speechiness
+
+SELECT 
+	'danceability' AS feature, 
+	danceability AS value, 
+	COUNT(track_name) AS num_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE danceability <> 0
+GROUP BY danceability
+UNION ALL
+SELECT 
+	'valence' AS feature, 
+	valence AS value, 
+	COUNT(track_name) AS num_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE valence <> 0
+GROUP BY valence
+UNION ALL
+SELECT 
+	'energy' AS feature, 
+	energy AS value, 
+	COUNT(track_name) AS num_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE energy <> 0
+GROUP BY energy
+UNION ALL
+SELECT 
+	'acousticness' AS feature, 
+	acousticness AS value, 
+	COUNT(track_name) AS num_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE acousticness <> 0
+GROUP BY acousticness
+UNION ALL
+SELECT 
+	'instrumentalness' AS feature, 
+	instrumentalness AS value, 
+	COUNT(track_name) AS num_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE instrumentalness <> 0
+GROUP BY instrumentalness
+UNION ALL
+SELECT 
+	'liveness' AS feature, 
+	liveness AS value, 
+	COUNT(track_name) AS num_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE liveness <> 0
+GROUP BY liveness
+UNION ALL
+SELECT 
+	'speechiness' AS feature, 
+	speechiness AS value, 
+	COUNT(track_name) AS num_songs
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE speechiness <> 0
+GROUP BY speechiness
+ORDER BY num_songs DESC;
+
+--Averaging the song features
+
+SELECT 
+	'danceability' AS feature, 
+	AVG(danceability) AS average
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE danceability <> 0
+UNION ALL 
+SELECT 
+	'valence' AS feature, 
+	AVG(valence) AS average
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE valence <> 0
+UNION ALL
+SELECT 
+	'energy' AS feature, 
+	AVG(energy) AS average
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE energy <> 0
+UNION ALL
+SELECT 
+	'acousticness' AS feature, 
+	AVG(acousticness) AS average
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE acousticness <> 0
+UNION ALL
+SELECT 
+	'instrumentalness' AS feature, 
+	AVG(instrumentalness) AS average
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE instrumentalness <> 0
+UNION ALL
+SELECT 
+	'liveness' AS feature, 
+	AVG(liveness) AS average
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE liveness <> 0
+UNION ALL
+SELECT 
+	'speechiness' AS feature, 
+	AVG(speechiness) AS average
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+WHERE speechiness <> 0
+
+--Viewing top 10 with song features
+--Summarizing the data for each song structure will show the correlation between these and the ability of the song to be part of the top 10 by streams. 
+
+SELECT TOP 10
+	track_name, artist_s_name, 
+	 streams, bpm, [key], danceability, valence,
+	 energy, acousticness, instrumentalness, liveness, speechiness
+FROM Popular_Spotify_Songs.dbo.Popular_Spotify_Songs
+ORDER BY streams DESC
